@@ -1,104 +1,33 @@
-const fs = require('fs');
 const express = require('express');
+const morgan = require('morgan');
+
+const tourRouter = require('./routes/tourRoutes');
+const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
-// middleware
+// 1) MIDDLEWARES
+app.use(morgan('dev'));
+
 app.use(express.json());
-
-// app.get('/', (req, res) => {
-//   res
-//     .status(200)
-//     .json({ message: 'Hello, from the sever side', app: 'Natours' });
-// });
-// app.post('/', (req, res) => {
-//   res.send('You can post to this endpoint... ');
-// });
-
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/dev-data/data/tours-simple.json`)
-);
-
-app.get('/api/v1/tours', (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    result: tours.length,
-    data: {
-      tours,
-    },
-  });
+app.use((req, res, next) => {
+  console.log('Hello from the middleware');
+  next();
+});
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  next();
 });
 
-app.get('/api/v1/tours/:id', (req, res) => {
-  const id = req.params.id * 1; // convert number to string
-  const tour = tours.find((el) => el.id === id);
+// 3) ROUTES
+app.use('/api/v1/tours', tourRouter);
+app.use('/api/v1/users', userRouter);
 
-  if (!tour) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Invalid ID',
-    });
-  }
+module.exports = app;
 
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour,
-    },
-  });
-});
-
-app.post('/api/v1/tours', (req, res) => {
-  // console.log(req.body);
-  const newId = tours[tours.length - 1].id;
-  const newTour = Object.assign({ id: newId }, req.body);
-
-  tours.push(newTour);
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(tours),
-    (err) => {
-      res.status(201).json({
-        status: 'success',
-        data: {
-          tours: newTour,
-        },
-      });
-    }
-  );
-});
-
-app.patch('/api/v1/tours/:id', (req, res) => {
-  if (req.params.id * 1 > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Invalid ID',
-    });
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour: '<Updated tour..>',
-    },
-  });
-});
-
-app.delete('/api/v1/tours/:id', (req, res) => {
-  if (req.params.id * 1 > tours.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'Invalid ID',
-    });
-  }
-
-  res.status(204).json({
-    status: 'success',
-    data: null,
-  });
-});
-
-const port = 3000;
-app.listen(port, () => {
-  console.log(`listening on port ${port}...`);
-});
+// Flow:receiving the request in app.js
+// -> depending on the route to enter one of the Router
+// -> depending on the route (/ or :id) or request then execute one of the controller
+// -> then the res get send and, fisnishing the request-response cycle
+// server.js to have everything related to express in one file and others related to the server
+// in another main file
