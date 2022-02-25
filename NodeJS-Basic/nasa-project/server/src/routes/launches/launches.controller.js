@@ -3,12 +3,12 @@ const {
   addNewLaunch,
   exitsLaunchWithId,
   abortLaunchById,
-} = require("../../model/launches.model");
+} = require("../../models/launches.model");
 
 // convert map to json format
 // any function start with http return a response of request
-function httpGetAllLaunches(req, res) {
-  return res.status(200).json(getAllLaunches());
+async function httpGetAllLaunches(req, res) {
+  return res.status(200).json(await getAllLaunches());
 }
 
 function httpAddNewLaunch(req, res) {
